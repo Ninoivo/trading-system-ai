@@ -1,0 +1,43 @@
+{
+  "name": "trading-system-ai",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "./",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version"]
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.3.0"
+  }
+}
+```
+
+4. Click **"Commit new file"**
+
+---
+
+## 🔧 Step 2: Create .gitignore File
+
+1. Click **"Add file"** → **"Create new file"**
+2. Name it: **`.gitignore`**
+3. Paste this:
+```
+node_modules/
+.env
+.DS_Store
+build/
+dist/
