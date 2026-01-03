@@ -24,20 +24,3 @@
     "tailwindcss": "^3.3.0"
   }
 }
-```
-
-4. Click **"Commit new file"**
-
----
-
-## 🔧 Step 2: Create .gitignore File
-
-1. Click **"Add file"** → **"Create new file"**
-2. Name it: **`.gitignore`**
-3. Paste this:
-```
-node_modules/
-.env
-.DS_Store
-build/
-dist/
