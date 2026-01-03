@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 AI Trading System</title>
+    <title>🚀 AI Trading System - LIVE</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -22,14 +21,22 @@
             const [watchlist, setWatchlist] = useState(['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA']);
             const [signals, setSignals] = useState([]);
             const [marketData, setMarketData] = useState({});
+            const [news, setNews] = useState([]);
+            const [breakingNews, setBreakingNews] = useState([]);
+            const [backTestData, setBackTestData] = useState(null);
+            const [riskMetrics, setRiskMetrics] = useState({});
+            const [hedgeStrategies, setHedgeStrategies] = useState([]);
+            const [economicEvents, setEconomicEvents] = useState([]);
+            const [aiPrompt, setAiPrompt] = useState('');
+            const [aiResponse, setAiResponse] = useState('');
+            const [autoAnalysis, setAutoAnalysis] = useState(true);
             const [brokerConfig, setBrokerConfig] = useState({ type: 'paper', enabled: false });
             const [showBrokerModal, setShowBrokerModal] = useState(false);
-            const [autoAnalysis, setAutoAnalysis] = useState(true);
 
             const stocks = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA'];
-            const fxPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD'];
-            const commodities = ['GOLD', 'CRUDE_OIL', 'SILVER', 'COPPER', 'WHEAT'];
-            const crypto = ['BTC/USD', 'ETH/USD', 'BNB/USD', 'SOL/USD', 'ADA/USD'];
+            const fxPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'EUR/GBP', 'EUR/JPY'];
+            const commodities = ['GOLD', 'CRUDE_OIL', 'SILVER', 'COPPER', 'NATURAL_GAS', 'WHEAT'];
+            const crypto = ['BTC/USD', 'ETH/USD', 'BNB/USD', 'SOL/USD', 'ADA/USD', 'XRP/USD', 'DOGE/USD', 'LINK/USD'];
 
             const calculateRSI = (prices, period = 14) => {
                 if (prices.length < period) return 50;
@@ -59,6 +66,8 @@
                     pattern = 'OVERBOUGHT'; strength = 85; signal = 'SELL';
                 } else if (ma5 > ma20 * 1.02 && rsi < 70) {
                     pattern = 'BULLISH'; strength = Math.min(100, (ma5 / ma20 - 1) * 100 * 50); signal = 'BUY';
+                } else if (ma5 < ma20 * 0.98 && rsi > 30) {
+                    pattern = 'BEARISH'; strength = Math.min(100, (1 - ma5 / ma20) * 100 * 50); signal = 'SELL';
                 }
                 
                 return { strength, pattern, signal, rsi, ma20, ma5, volatility };
@@ -77,18 +86,14 @@
                     });
                     
                     const lastPrice = priceHistory[priceHistory.length - 1];
-                    const openPrice = priceHistory[priceHistory.length - 25] || basePrice;
-                    const dayChange = ((lastPrice - openPrice) / openPrice) * 100;
-                    
                     const analysis = analyzePattern(priceHistory);
                     
                     newMarketData[symbol] = {
                         price: lastPrice,
                         change: ((lastPrice - basePrice) / basePrice) * 100,
-                        dayChange,
-                        open: openPrice,
                         high: Math.max(...priceHistory),
                         low: Math.min(...priceHistory),
+                        volume: Math.floor(Math.random() * 50000000),
                         analysis
                     };
 
@@ -106,220 +111,88 @@
 
                 setMarketData(newMarketData);
                 setSignals(newSignals);
+
+                // Calculate risk metrics
+                const volatilities = Object.values(newMarketData).map(d => d.analysis.volatility);
+                const avgVol = volatilities.reduce((a,b) => a+b, 0) / volatilities.length;
+                setRiskMetrics({
+                    sharpeRatio: (Math.random() * 1.5 + 0.8).toFixed(2),
+                    volatility: (avgVol * 100).toFixed(2),
+                    valueAtRisk: (Math.random() * 3 + 1).toFixed(2),
+                    maxDrawdown: (Math.random() * 15 + 5).toFixed(2),
+                    positionSize: (Math.random() * 3 + 2).toFixed(1)
+                });
+
+                // Generate hedging strategies
+                const strategies = watchlist.slice(0, 3).map(s => ({
+                    position: s,
+                    hedge: watchlist[(watchlist.indexOf(s) + 1) % watchlist.length],
+                    correlation: (Math.random() * 0.6 - 0.3).toFixed(2),
+                    ratio: (Math.random() * 50 + 20).toFixed(1)
+                }));
+                setHedgeStrategies(strategies);
             };
 
-            useEffect(() => {
-                generateMarketData();
-                const interval = setInterval(generateMarketData, 10000);
-                return () => clearInterval(interval);
-            }, [watchlist]);
+            const fetchNews = () => {
+                const mockNews = [
+                    { id: 1, title: 'Fed Signals Rate Hold', sentiment: 'POSITIVE', impact: 'HIGH', source: 'Reuters', breaking: true, priceImpact: '+0.45%' },
+                    { id: 2, title: 'Apple Beats Q4 Earnings', sentiment: 'POSITIVE', impact: 'HIGH', source: 'CNBC', breaking: false, priceImpact: '+3.2%' },
+                    { id: 3, title: 'Oil Prices Surge on OPEC', sentiment: 'NEUTRAL', impact: 'MEDIUM', source: 'Bloomberg', breaking: false, priceImpact: '+2.8%' },
+                    { id: 4, title: 'ECB Holds Rates Steady', sentiment: 'NEUTRAL', impact: 'MEDIUM', source: 'FT', breaking: false, priceImpact: '+0.2%' },
+                    { id: 5, title: 'Goldman Downgrades Tech', sentiment: 'NEGATIVE', impact: 'MEDIUM', source: 'MarketWatch', breaking: false, priceImpact: '-1.5%' }
+                ];
+                setNews(mockNews);
+                setBreakingNews(mockNews.filter(n => n.breaking));
+            };
 
-            return (
-                <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-gray-100 font-mono">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 border-b-2 border-cyan-500 p-6">
-                        <div className="max-w-7xl mx-auto flex justify-between items-center">
-                            <div>
-                                <h1 className="text-3xl font-bold text-cyan-300">🌍 AI Trading System</h1>
-                                <p className="text-sm text-gray-300">LIVE on Vercel • Multi-Asset • FBS & Pepperstone Ready</p>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-3xl font-bold text-green-400">$100,000</div>
-                                <div className="text-sm text-purple-300">Signals: {signals.length}</div>
-                            </div>
-                        </div>
-                    </div>
+            const fetchEconomicCalendar = () => {
+                setEconomicEvents([
+                    { time: '08:30', country: 'USD', event: 'NFP', impact: 'HIGH', forecast: '200K', previous: '180K' },
+                    { time: '13:00', country: 'EUR', event: 'ECB Rate Decision', impact: 'HIGH', forecast: '4.25%', previous: '4.25%' },
+                    { time: '10:00', country: 'GBP', event: 'Retail Sales', impact: 'MEDIUM', forecast: '0.2%', previous: '-0.1%' },
+                    { time: '18:00', country: 'AUD', event: 'CPI', impact: 'MEDIUM', forecast: '3.2%', previous: '3.5%' }
+                ]);
+            };
 
-                    {/* Controls */}
-                    <div className="bg-gray-900 border-b border-gray-700 p-4">
-                        <div className="max-w-7xl mx-auto flex gap-3 flex-wrap items-center">
-                            {['stocks', 'forex', 'commodities', 'crypto'].map(cls => (
-                                <button
-                                    key={cls}
-                                    onClick={() => {
-                                        setAssetClass(cls);
-                                        if (cls === 'stocks') setWatchlist(stocks);
-                                        else if (cls === 'forex') setWatchlist(fxPairs);
-                                        else if (cls === 'commodities') setWatchlist(commodities);
-                                        else setWatchlist(crypto);
-                                    }}
-                                    className={`px-4 py-2 rounded border font-bold ${
-                                        assetClass === cls ? 'bg-cyan-600 border-cyan-400' : 'bg-gray-800 border-gray-600'
-                                    }`}
-                                >
-                                    {cls === 'stocks' ? '📈 Stocks' : cls === 'forex' ? '💱 Forex' : cls === 'commodities' ? '🛢️ Commodities' : '₿ Crypto'}
-                                </button>
-                            ))}
+            const runBacktest = (symbol) => {
+                const initialCapital = 100000;
+                let capital = initialCapital;
+                const equity = [];
+                
+                const historical = Array(60).fill(0).map((_, i) => 100 + Math.sin(i/10)*20 + (Math.random()-0.5)*15);
+                
+                let maxDD = 0, peak = capital;
+                for (let i = 20; i < historical.length; i++) {
+                    const value = capital + (Math.random() * 1000 - 500);
+                    if (value > peak) peak = value;
+                    const dd = (peak - value) / peak;
+                    if (dd > maxDD) maxDD = dd;
+                    equity.push({ day: i, value });
+                }
 
-                            <button
-                                onClick={() => setAutoAnalysis(!autoAnalysis)}
-                                className={`px-3 py-2 rounded border text-sm font-bold ml-auto ${
-                                    autoAnalysis ? 'bg-green-600 border-green-400' : 'bg-gray-800 border-gray-600'
-                                }`}
-                            >
-                                ⚡ {autoAnalysis ? 'LIVE' : 'OFF'}
-                            </button>
+                const finalValue = capital + (Math.random() * 5000);
+                const returnPct = ((finalValue - initialCapital) / initialCapital * 100).toFixed(2);
 
-                            <button
-                                onClick={() => setShowBrokerModal(true)}
-                                className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-sm hover:border-blue-500"
-                            >
-                                ⚙️ Config
-                            </button>
+                setBackTestData({
+                    symbol,
+                    initialCapital,
+                    finalValue: finalValue.toFixed(2),
+                    returnPct,
+                    trades: Math.floor(Math.random() * 20 + 10),
+                    winRate: (Math.random() * 60 + 40).toFixed(1),
+                    maxDrawdown: (maxDD * 100).toFixed(2),
+                    sharpeRatio: (returnPct / 15).toFixed(2),
+                    equity
+                });
+            };
 
-                            <div className="flex gap-2">
-                                {['dashboard', 'signals', 'performance'].map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        className={`px-3 py-2 border rounded text-xs font-bold ${
-                                            activeTab === tab ? 'bg-blue-600 border-blue-400' : 'bg-gray-800 border-gray-600'
-                                        }`}
-                                    >
-                                        {tab === 'performance' ? '📊' : tab.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Broker Modal */}
-                    {showBrokerModal && (
-                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                            <div className="bg-gray-900 border border-blue-500 rounded-lg p-6 max-w-md w-full space-y-4">
-                                <h3 className="text-xl font-bold text-blue-400">⚙️ Broker Config</h3>
-                                <select
-                                    value={brokerConfig.type}
-                                    onChange={(e) => setBrokerConfig({...brokerConfig, type: e.target.value})}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2"
-                                >
-                                    <option value="paper">Paper Trading</option>
-                                    <option value="fbs">FBS</option>
-                                    <option value="pepperstone">Pepperstone</option>
-                                </select>
-                                <label className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={brokerConfig.enabled}
-                                        onChange={(e) => setBrokerConfig({...brokerConfig, enabled: e.target.checked})}
-                                    />
-                                    <span className="text-sm">Enable Trading</span>
-                                </label>
-                                <button
-                                    onClick={() => setShowBrokerModal(false)}
-                                    className="w-full px-4 py-2 bg-blue-600 rounded font-bold hover:bg-blue-700"
-                                >
-                                    Save
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto p-6 pb-20">
-                        {activeTab === 'dashboard' && (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-5 gap-3">
-                                    <div className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                        <div className="text-xs text-gray-500">SIGNALS</div>
-                                        <div className="text-2xl font-bold text-cyan-400">{signals.length}</div>
-                                    </div>
-                                    <div className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                        <div className="text-xs text-gray-500">ASSETS</div>
-                                        <div className="text-2xl font-bold text-blue-400">{watchlist.length}</div>
-                                    </div>
-                                    <div className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                        <div className="text-xs text-gray-500">BROKER</div>
-                                        <div className="text-2xl font-bold text-green-400">{brokerConfig.enabled ? '✓' : '✗'}</div>
-                                    </div>
-                                    <div className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                        <div className="text-xs text-gray-500">STATUS</div>
-                                        <div className="text-2xl font-bold text-purple-400">{autoAnalysis ? 'LIVE' : 'OFF'}</div>
-                                    </div>
-                                    <div className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                        <div className="text-xs text-gray-500">PLATFORM</div>
-                                        <div className="text-2xl font-bold text-yellow-400">WEB</div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    {watchlist.slice(0, 2).map(symbol => marketData[symbol] && (
-                                        <div key={symbol} className="bg-gray-900 border border-gray-700 p-4 rounded">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="text-lg font-bold">{symbol}</h4>
-                                                <div className={`font-bold ${marketData[symbol].dayChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {marketData[symbol].dayChange.toFixed(2)}%
-                                                </div>
-                                            </div>
-                                            <div className="text-2xl font-bold text-cyan-300 mt-2">${marketData[symbol].price.toFixed(2)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'signals' && (
-                            <div className="bg-gray-900 border border-gray-700 p-6 rounded">
-                                <h2 className="text-lg font-bold text-cyan-400 mb-4">Trading Signals</h2>
-                                {signals.length === 0 ? (
-                                    <div className="text-gray-500 text-center py-12">No signals yet</div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {signals.map((signal, i) => (
-                                            <div key={i} className="flex justify-between bg-gray-800 p-4 rounded border border-gray-700">
-                                                <div>
-                                                    <div className="font-bold">{signal.symbol}</div>
-                                                    <div className="text-xs text-gray-400">{signal.pattern}</div>
-                                                </div>
-                                                <div className="text-purple-400 font-bold">{signal.strength.toFixed(0)}%</div>
-                                                <div className={`px-4 py-2 rounded font-bold text-white ${signal.action === 'BUY' ? 'bg-green-600' : 'bg-red-600'}`}>
-                                                    {signal.action}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'performance' && (
-                            <div className="bg-gray-900 border border-gray-700 p-6 rounded">
-                                <h2 className="text-lg font-bold text-cyan-400 mb-4">Performance</h2>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-gray-700">
-                                                <th className="text-left p-3">Symbol</th>
-                                                <th className="text-right p-3">Price</th>
-                                                <th className="text-right p-3">Change %</th>
-                                                <th className="text-right p-3">High</th>
-                                                <th className="text-right p-3">Low</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {watchlist.map(symbol => marketData[symbol] && (
-                                                <tr key={symbol} className="border-b border-gray-800 hover:bg-gray-800">
-                                                    <td className="p-3 font-bold">{symbol}</td>
-                                                    <td className="text-right p-3">${marketData[symbol].price.toFixed(2)}</td>
-                                                    <td className={`text-right p-3 ${marketData[symbol].dayChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {marketData[symbol].dayChange.toFixed(2)}%
-                                                    </td>
-                                                    <td className="text-right p-3 text-green-400">${marketData[symbol].high.toFixed(2)}</td>
-                                                    <td className="text-right p-3 text-red-400">${marketData[symbol].low.toFixed(2)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<TradingSystem />);
-    </script>
-</body>
-</html>
+            const generateAIInsight = () => {
+                if (!aiPrompt.trim()) return;
+                
+                const bullishSignals = signals.filter(s => s.action === 'BUY').length;
+                const bearishSignals = signals.filter(s => s.action === 'SELL').length;
+                const marketSentiment = bullishSignals > bearishSignals ? 'BULLISH' : 'BEARISH';
+                
+                let response = `📊 Market Analysis:\n\n`;
+                response += `• Current Sentiment: ${marketSentiment}\n`;
+                response += `• Trading Signals: ${bullishSignals} BUY vs ${bearishSigna
