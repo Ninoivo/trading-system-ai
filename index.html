@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 AI Trading System - LIVE</title>
+    <title>🚀 AI Trading System</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,188 +11,171 @@
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        function TradingSystem() {
-            const [activeTab, setActiveTab] = useState('dashboard');
+        function TradingApp() {
+            const [tab, setTab] = useState('dashboard');
             const [assetClass, setAssetClass] = useState('stocks');
-            const [watchlist, setWatchlist] = useState(['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA']);
             const [signals, setSignals] = useState([]);
             const [marketData, setMarketData] = useState({});
             const [news, setNews] = useState([]);
-            const [breakingNews, setBreakingNews] = useState([]);
+            const [aiResponse, setAiResponse] = useState('');
+            const [aiPrompt, setAiPrompt] = useState('');
             const [backTestData, setBackTestData] = useState(null);
             const [riskMetrics, setRiskMetrics] = useState({});
-            const [hedgeStrategies, setHedgeStrategies] = useState([]);
-            const [economicEvents, setEconomicEvents] = useState([]);
-            const [aiPrompt, setAiPrompt] = useState('');
-            const [aiResponse, setAiResponse] = useState('');
-            const [autoAnalysis, setAutoAnalysis] = useState(true);
-            const [brokerConfig, setBrokerConfig] = useState({ type: 'paper', enabled: false });
-            const [showBrokerModal, setShowBrokerModal] = useState(false);
 
             const stocks = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA'];
-            const fxPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'EUR/GBP', 'EUR/JPY'];
-            const commodities = ['GOLD', 'CRUDE_OIL', 'SILVER', 'COPPER', 'NATURAL_GAS', 'WHEAT'];
-            const crypto = ['BTC/USD', 'ETH/USD', 'BNB/USD', 'SOL/USD', 'ADA/USD', 'XRP/USD', 'DOGE/USD', 'LINK/USD'];
+            const forex = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD'];
+            const commodities = ['GOLD', 'CRUDE_OIL', 'SILVER', 'COPPER', 'WHEAT'];
+            const crypto = ['BTC/USD', 'ETH/USD', 'BNB/USD', 'SOL/USD', 'ADA/USD'];
 
-            const calculateRSI = (prices, period = 14) => {
-                if (prices.length < period) return 50;
+            const [watchlist, setWatchlist] = useState(stocks);
+
+            const calculateRSI = (prices) => {
+                if (prices.length < 14) return 50;
                 let gains = 0, losses = 0;
-                for (let i = 1; i < period; i++) {
+                for (let i = 1; i < 14; i++) {
                     const change = prices[i] - prices[i - 1];
                     if (change > 0) gains += change;
                     else losses -= change;
                 }
-                const rs = (gains / period) / (losses / period || 1);
+                const rs = (gains / 14) / (losses / 14 || 1);
                 return 100 - (100 / (1 + rs));
             };
 
             const analyzePattern = (prices) => {
-                if (prices.length < 20) return { strength: 0, pattern: 'INSUFFICIENT_DATA', signal: 'HOLD' };
+                if (prices.length < 20) return { strength: 0, pattern: 'WAIT', signal: 'HOLD' };
+                
                 const recent = prices.slice(-20);
                 const ma20 = recent.reduce((a, b) => a + b, 0) / 20;
                 const ma5 = recent.slice(-5).reduce((a, b) => a + b, 0) / 5;
-                const volatility = Math.sqrt(recent.reduce((sum, p) => sum + Math.pow(p - ma20, 2), 0) / 20);
                 const rsi = calculateRSI(recent);
-                
+
                 let strength = 0, pattern = 'NEUTRAL', signal = 'HOLD';
-                
-                if (prices[prices.length - 1] < (ma20 - volatility * 2) && rsi < 30) {
-                    pattern = 'OVERSOLD'; strength = 85; signal = 'BUY';
-                } else if (prices[prices.length - 1] > (ma20 + volatility * 2) && rsi > 70) {
-                    pattern = 'OVERBOUGHT'; strength = 85; signal = 'SELL';
-                } else if (ma5 > ma20 * 1.02 && rsi < 70) {
-                    pattern = 'BULLISH'; strength = Math.min(100, (ma5 / ma20 - 1) * 100 * 50); signal = 'BUY';
-                } else if (ma5 < ma20 * 0.98 && rsi > 30) {
-                    pattern = 'BEARISH'; strength = Math.min(100, (1 - ma5 / ma20) * 100 * 50); signal = 'SELL';
+
+                if (ma5 > ma20 && rsi < 70) {
+                    pattern = 'BULLISH';
+                    strength = 75;
+                    signal = 'BUY';
+                } else if (ma5 < ma20 && rsi > 30) {
+                    pattern = 'BEARISH';
+                    strength = 75;
+                    signal = 'SELL';
                 }
-                
-                return { strength, pattern, signal, rsi, ma20, ma5, volatility };
+
+                return { strength, pattern, signal, rsi };
             };
 
             const generateMarketData = () => {
-                const newMarketData = {};
+                const newData = {};
                 const newSignals = [];
 
                 watchlist.forEach(symbol => {
                     const basePrice = 100 + Math.random() * 200;
-                    const priceHistory = Array(50).fill(0).map((_, i) => {
-                        const trend = Math.sin(i / 15) * 15;
-                        const noise = (Math.random() - 0.5) * 8;
-                        return Math.max(basePrice + trend + noise, 1);
+                    const prices = Array(50).fill(0).map((_, i) => {
+                        return basePrice + Math.sin(i / 10) * 20 + (Math.random() - 0.5) * 10;
                     });
-                    
-                    const lastPrice = priceHistory[priceHistory.length - 1];
-                    const analysis = analyzePattern(priceHistory);
-                    
-                    newMarketData[symbol] = {
-                        price: lastPrice,
-                        change: ((lastPrice - basePrice) / basePrice) * 100,
-                        high: Math.max(...priceHistory),
-                        low: Math.min(...priceHistory),
-                        volume: Math.floor(Math.random() * 50000000),
+
+                    const lastPrice = prices[49];
+                    const analysis = analyzePattern(prices);
+
+                    newData[symbol] = {
+                        price: lastPrice.toFixed(2),
+                        change: ((lastPrice - basePrice) / basePrice * 100).toFixed(2),
+                        high: Math.max(...prices).toFixed(2),
+                        low: Math.min(...prices).toFixed(2),
                         analysis
                     };
 
-                    if (analysis.strength > 55) {
+                    if (analysis.strength > 50) {
                         newSignals.push({
                             symbol,
                             action: analysis.signal,
                             strength: analysis.strength,
                             pattern: analysis.pattern,
-                            timestamp: new Date().toLocaleTimeString(),
-                            price: lastPrice
+                            time: new Date().toLocaleTimeString()
                         });
                     }
                 });
 
-                setMarketData(newMarketData);
+                setMarketData(newData);
                 setSignals(newSignals);
 
-                // Calculate risk metrics
-                const volatilities = Object.values(newMarketData).map(d => d.analysis.volatility);
-                const avgVol = volatilities.reduce((a,b) => a+b, 0) / volatilities.length;
                 setRiskMetrics({
-                    sharpeRatio: (Math.random() * 1.5 + 0.8).toFixed(2),
-                    volatility: (avgVol * 100).toFixed(2),
-                    valueAtRisk: (Math.random() * 3 + 1).toFixed(2),
-                    maxDrawdown: (Math.random() * 15 + 5).toFixed(2),
-                    positionSize: (Math.random() * 3 + 2).toFixed(1)
+                    sharpe: (Math.random() * 2 + 0.5).toFixed(2),
+                    volatility: (Math.random() * 30 + 10).toFixed(1),
+                    maxDD: (Math.random() * 20 + 5).toFixed(1),
+                    var: (Math.random() * 3 + 1).toFixed(2),
+                    posSize: (Math.random() * 3 + 2).toFixed(1)
                 });
-
-                // Generate hedging strategies
-                const strategies = watchlist.slice(0, 3).map(s => ({
-                    position: s,
-                    hedge: watchlist[(watchlist.indexOf(s) + 1) % watchlist.length],
-                    correlation: (Math.random() * 0.6 - 0.3).toFixed(2),
-                    ratio: (Math.random() * 50 + 20).toFixed(1)
-                }));
-                setHedgeStrategies(strategies);
             };
 
             const fetchNews = () => {
-                const mockNews = [
-                    { id: 1, title: 'Fed Signals Rate Hold', sentiment: 'POSITIVE', impact: 'HIGH', source: 'Reuters', breaking: true, priceImpact: '+0.45%' },
-                    { id: 2, title: 'Apple Beats Q4 Earnings', sentiment: 'POSITIVE', impact: 'HIGH', source: 'CNBC', breaking: false, priceImpact: '+3.2%' },
-                    { id: 3, title: 'Oil Prices Surge on OPEC', sentiment: 'NEUTRAL', impact: 'MEDIUM', source: 'Bloomberg', breaking: false, priceImpact: '+2.8%' },
-                    { id: 4, title: 'ECB Holds Rates Steady', sentiment: 'NEUTRAL', impact: 'MEDIUM', source: 'FT', breaking: false, priceImpact: '+0.2%' },
-                    { id: 5, title: 'Goldman Downgrades Tech', sentiment: 'NEGATIVE', impact: 'MEDIUM', source: 'MarketWatch', breaking: false, priceImpact: '-1.5%' }
-                ];
-                setNews(mockNews);
-                setBreakingNews(mockNews.filter(n => n.breaking));
-            };
-
-            const fetchEconomicCalendar = () => {
-                setEconomicEvents([
-                    { time: '08:30', country: 'USD', event: 'NFP', impact: 'HIGH', forecast: '200K', previous: '180K' },
-                    { time: '13:00', country: 'EUR', event: 'ECB Rate Decision', impact: 'HIGH', forecast: '4.25%', previous: '4.25%' },
-                    { time: '10:00', country: 'GBP', event: 'Retail Sales', impact: 'MEDIUM', forecast: '0.2%', previous: '-0.1%' },
-                    { time: '18:00', country: 'AUD', event: 'CPI', impact: 'MEDIUM', forecast: '3.2%', previous: '3.5%' }
+                setNews([
+                    { title: 'Fed Signals Rate Hold', sentiment: 'POSITIVE', impact: 'HIGH' },
+                    { title: 'Apple Beats Earnings', sentiment: 'POSITIVE', impact: 'HIGH' },
+                    { title: 'Oil Prices Surge', sentiment: 'NEUTRAL', impact: 'MEDIUM' },
+                    { title: 'ECB Holds Rates', sentiment: 'NEUTRAL', impact: 'MEDIUM' },
+                    { title: 'Tech Sector Downgrade', sentiment: 'NEGATIVE', impact: 'MEDIUM' }
                 ]);
             };
 
-            const runBacktest = (symbol) => {
-                const initialCapital = 100000;
-                let capital = initialCapital;
-                const equity = [];
-                
-                const historical = Array(60).fill(0).map((_, i) => 100 + Math.sin(i/10)*20 + (Math.random()-0.5)*15);
-                
-                let maxDD = 0, peak = capital;
-                for (let i = 20; i < historical.length; i++) {
-                    const value = capital + (Math.random() * 1000 - 500);
-                    if (value > peak) peak = value;
-                    const dd = (peak - value) / peak;
-                    if (dd > maxDD) maxDD = dd;
-                    equity.push({ day: i, value });
-                }
+            const generateAI = () => {
+                if (!aiPrompt.trim()) return;
+                const bullish = signals.filter(s => s.action === 'BUY').length;
+                const bearish = signals.filter(s => s.action === 'SELL').length;
+                const sentiment = bullish > bearish ? 'BULLISH' : 'BEARISH';
 
-                const finalValue = capital + (Math.random() * 5000);
-                const returnPct = ((finalValue - initialCapital) / initialCapital * 100).toFixed(2);
-
-                setBackTestData({
-                    symbol,
-                    initialCapital,
-                    finalValue: finalValue.toFixed(2),
-                    returnPct,
-                    trades: Math.floor(Math.random() * 20 + 10),
-                    winRate: (Math.random() * 60 + 40).toFixed(1),
-                    maxDrawdown: (maxDD * 100).toFixed(2),
-                    sharpeRatio: (returnPct / 15).toFixed(2),
-                    equity
-                });
+                const response = `Market Analysis:\n\nSentiment: ${sentiment}\nBUY Signals: ${bullish}\nSELL Signals: ${bearish}\nSharpe Ratio: ${riskMetrics.sharpe}\nVolatility: ${riskMetrics.volatility}%\nRecommendation: ${sentiment === 'BULLISH' ? 'Accumulate on dips' : 'Reduce exposure'}`;
+                
+                setAiResponse(response);
+                setAiPrompt('');
             };
 
-            const generateAIInsight = () => {
-                if (!aiPrompt.trim()) return;
-                
-                const bullishSignals = signals.filter(s => s.action === 'BUY').length;
-                const bearishSignals = signals.filter(s => s.action === 'SELL').length;
-                const marketSentiment = bullishSignals > bearishSignals ? 'BULLISH' : 'BEARISH';
-                
-                let response = `📊 Market Analysis:\n\n`;
-                response += `• Current Sentiment: ${marketSentiment}\n`;
-                response += `• Trading Signals: ${bullishSignals} BUY vs ${bearishSigna
+            const runBacktest = (symbol) => {
+                const result = {
+                    symbol,
+                    return: (Math.random() * 50 + 10).toFixed(2),
+                    winRate: (Math.random() * 60 + 40).toFixed(0),
+                    sharpe: (Math.random() * 2 + 0.8).toFixed(2),
+                    maxDD: (Math.random() * 20 + 5).toFixed(2),
+                    trades: Math.floor(Math.random() * 30 + 10)
+                };
+                setBackTestData(result);
+            };
+
+            useEffect(() => {
+                generateMarketData();
+                fetchNews();
+                const timer = setInterval(generateMarketData, 10000);
+                return () => clearInterval(timer);
+            }, [watchlist]);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-100">
+                    {/* HEADER */}
+                    <div className="bg-gradient-to-r from-blue-900 to-purple-900 border-b-2 border-cyan-500 p-6">
+                        <div className="max-w-7xl mx-auto flex justify-between">
+                            <div>
+                                <h1 className="text-4xl font-bold text-cyan-300">🚀 AI Trading System</h1>
+                                <p className="text-gray-300 mt-1">LIVE • Multi-Asset • AI Powered</p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-3xl font-bold text-green-400">$100K</div>
+                                <div className="text-purple-300">Signals: {signals.length}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CONTROLS */}
+                    <div className="bg-gray-900 border-b border-gray-700 p-4">
+                        <div className="max-w-7xl mx-auto flex gap-2 flex-wrap items-center">
+                            <button onClick={() => {setAssetClass('stocks'); setWatchlist(stocks);}} className={`px-3 py-2 rounded border ${assetClass === 'stocks' ? 'bg-cyan-600 border-cyan-400' : 'bg-gray-800 border-gray-600'}`}>📈 Stocks</button>
+                            <button onClick={() => {setAssetClass('forex'); setWatchlist(forex);}} className={`px-3 py-2 rounded border ${assetClass === 'forex' ? 'bg-cyan-600 border-cyan-400' : 'bg-gray-800 border-gray-600'}`}>💱 Forex</button>
+                            <button onClick={() => {setAssetClass('commodities'); setWatchlist(commodities);}} className={`px-3 py-2 rounded border ${assetClass === 'commodities' ? 'bg-cyan-600 border-cyan-400' : 'bg-gray-800 border-gray-600'}`}>🛢️ Commodities</button>
+                            <button onClick={() => {setAssetClass('crypto'); setWatchlist(crypto);}} className={`px-3 py-2 rounded border ${assetClass === 'crypto' ? 'bg-cyan-600 border-cyan-400' : 'bg-gray-800 border-gray-600'}`}>₿ Crypto</button>
+
+                            <div className="flex gap-1 ml-auto">
+                                {['dashboard', 'signals', 'news', 'ai', 'backtest', 'risk'].map(t => (
+                                    <button key={t} onClick={(
